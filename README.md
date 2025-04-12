@@ -58,17 +58,6 @@ Ajudar o usuário a planejar suas refeições diárias ou semanais de forma prá
 - Histórico de consumo nutricional (ex: calorias diárias, ingestão de nutrientes)
 - Opção de editar nome de usuário e preferências
 
----
-
-## 🧱 Extras possíveis:
-- **Firebase Auth** para login e registro
-- **Firestore ou SQLite** para armazenar as refeições e os ingredientes
-- **Notificações push** para alertar o usuário sobre o horário das refeições ou lembretes de compras
-- **Integração com APIs de nutrição** para obter valores nutricionais automaticamente
-- **Gráficos de consumo de nutrientes** (calorias, proteínas, carboidratos) usando `fl_chart` ou `charts_flutter`
-
----
-
 Esse app pode ser muito útil para quem deseja organizar suas refeições de forma mais eficiente e saudável. Ele oferece tanto o planejamento das refeições quanto a parte prática de compras e acompanhamento nutricional.
 
 
