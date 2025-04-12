@@ -1,4 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:pdm_fatec_1/view/dashboard/dashboard_view.dart';
+import 'package:pdm_fatec_1/view/forgot-password/forgot-password_view.dart';
+import 'package:pdm_fatec_1/view/register/register_view.dart';
+// Importe a tela de dashboard
 
 class HomePage extends StatefulWidget {
   @override
@@ -9,6 +13,8 @@ class _HomePageState extends State<HomePage> {
   final _formKey = GlobalKey<FormState>();
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
+  bool _isLoading = false;
+  String? _errorMessage;
 
   // Function to validade e-mail. Yes we use regex on this :P
   String? _validateEmail(String? value) {
@@ -30,6 +36,45 @@ class _HomePageState extends State<HomePage> {
       return 'Por favor, insira sua senha';
     }
     return null;
+  }
+
+  // Função para realizar o login
+  void _login() async {
+    if (!_formKey.currentState!.validate()) {
+      return;
+    }
+
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+
+    try {
+      // Simular uma chamada de API para login
+      await Future.delayed(const Duration(seconds: 2));
+
+      // Em um app real, você faria a validação real do login aqui
+      // Por enquanto, vamos apenas permitir o login para qualquer e-mail/senha válidos
+
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+
+        // Redirecionar para o dashboard após login bem-sucedido
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const DashboardScreen()),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+          _errorMessage = "Falha no login. Verifique suas credenciais.";
+        });
+      }
+    }
   }
 
   @override
@@ -90,22 +135,31 @@ class _HomePageState extends State<HomePage> {
               ),
               SizedBox(height: 20),
 
+              // Mensagem de erro (se houver)
+              if (_errorMessage != null)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 16),
+                  child: Text(
+                    _errorMessage!,
+                    style: const TextStyle(color: Colors.red, fontSize: 14),
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+
               // Botão de Login
               ElevatedButton(
-                onPressed: () {
-                  // Verifica se o formulário é válido
-                  if (_formKey.currentState?.validate() ?? false) {
-                    // Se o formulário for válido, podemos proceder com o login
-                    print(
-                      'E-mail: ${_emailController.text}, Senha: ${_passwordController.text}',
-                    );
-                    // Aqui você pode adicionar sua lógica de login
-                  } else {
-                    // Caso o formulário não seja válido, mostramos um feedback
-                    print('Formulário inválido');
-                  }
-                },
-                child: Text('Entrar', style: TextStyle(color: Colors.white)),
+                onPressed: _isLoading ? null : _login,
+                child:
+                    _isLoading
+                        ? SizedBox(
+                          height: 20,
+                          width: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Colors.white,
+                          ),
+                        )
+                        : Text('Entrar', style: TextStyle(color: Colors.white)),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.orange, // Cor do botão
                   // I dont know how to put width: 100% in a button, this framework sucks CSS is superior.
@@ -123,8 +177,13 @@ class _HomePageState extends State<HomePage> {
                 children: [
                   TextButton(
                     onPressed: () {
-                      // Ação para recuperar senha
-                      print('Redirecionar para recuperar senha');
+                      // Navegar para a tela de Esqueci Minha Senha
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => ForgotPasswordScreen(),
+                        ),
+                      );
                     },
                     child: Text(
                       'Esqueci minha senha',
@@ -134,8 +193,13 @@ class _HomePageState extends State<HomePage> {
                   SizedBox(width: 60),
                   TextButton(
                     onPressed: () {
-                      // Ação para registrar novo usuário
-                      print('Redirecionar para página de registro');
+                      // Navegar para a tela de Cadastro
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => RegistrationScreen(),
+                        ),
+                      );
                     },
                     child: Text(
                       'Criar uma conta',
