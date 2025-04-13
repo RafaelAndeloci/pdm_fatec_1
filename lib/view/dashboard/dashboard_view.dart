@@ -25,20 +25,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
       appBar: AppBar(
         title: const Text('MealPlanner', style: TextStyle(color: Colors.white)),
         backgroundColor: Colors.orange,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.notifications, color: Colors.white),
-            onPressed: () {
-              // Implementar funcionalidade de notificações
-            },
-          ),
-          IconButton(
-            icon: const Icon(Icons.person, color: Colors.white),
-            onPressed: () {
-              // Navegar para a tela de perfil
-            },
-          ),
-        ],
       ),
       body: IndexedStack(
         index: _selectedIndex,

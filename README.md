@@ -57,8 +57,3 @@ Ajudar o usuário a planejar suas refeições diárias ou semanais de forma prá
 - Configuração de alertas para lembrar o usuário de preparar as refeições ou de fazer compras
 - Histórico de consumo nutricional (ex: calorias diárias, ingestão de nutrientes)
 - Opção de editar nome de usuário e preferências
-
-Esse app pode ser muito útil para quem deseja organizar suas refeições de forma mais eficiente e saudável. Ele oferece tanto o planejamento das refeições quanto a parte prática de compras e acompanhamento nutricional.
-
-
-O que acha? Ou quer tentar uma outra ideia diferente? 😄

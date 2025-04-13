@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 class RegistrationScreen extends StatefulWidget {
   const RegistrationScreen({super.key});
@@ -11,6 +12,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
   final _formKey = GlobalKey<FormState>();
   final TextEditingController _usernameController = TextEditingController();
   final TextEditingController _emailController = TextEditingController();
+  final TextEditingController _phoneController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   final TextEditingController _confirmPasswordController =
       TextEditingController();
@@ -40,6 +42,19 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
     }
     if (value.length < 3) {
       return 'Nome de usuário deve ter pelo menos 3 caracteres';
+    }
+    return null;
+  }
+
+  // Validação de telefone
+  String? _validatePhone(String? value) {
+    if (value == null || value.isEmpty) {
+      return 'Por favor, insira seu número de telefone';
+    }
+    // Remover caracteres não numéricos para validação
+    String numericValue = value.replaceAll(RegExp(r'[^0-9]'), '');
+    if (numericValue.length < 10 || numericValue.length > 11) {
+      return 'Formato inválido. Use (DDD) + número';
     }
     return null;
   }
@@ -115,6 +130,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
   void dispose() {
     _usernameController.dispose();
     _emailController.dispose();
+    _phoneController.dispose();
     _passwordController.dispose();
     _confirmPasswordController.dispose();
     super.dispose();
@@ -200,6 +216,30 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                     fillColor: Colors.grey.shade200,
                   ),
                   validator: _validateEmail,
+                  textInputAction: TextInputAction.next,
+                ),
+
+                const SizedBox(height: 16),
+
+                // Campo de Telefone
+                TextFormField(
+                  controller: _phoneController,
+                  keyboardType: TextInputType.phone,
+                  decoration: InputDecoration(
+                    labelText: 'Telefone',
+                    hintText: '(XX) XXXXX-XXXX',
+                    prefixIcon: const Icon(Icons.phone),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    filled: true,
+                    fillColor: Colors.grey.shade200,
+                  ),
+                  inputFormatters: [
+                    FilteringTextInputFormatter.digitsOnly,
+                    LengthLimitingTextInputFormatter(11),
+                  ],
+                  validator: _validatePhone,
                   textInputAction: TextInputAction.next,
                 ),
 

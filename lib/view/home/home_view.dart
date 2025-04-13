@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:pdm_fatec_1/view/about/about_view.dart';
 import 'package:pdm_fatec_1/view/dashboard/dashboard_view.dart';
 import 'package:pdm_fatec_1/view/forgot-password/forgot-password_view.dart';
 import 'package:pdm_fatec_1/view/register/register_view.dart';
@@ -86,6 +87,18 @@ class _HomePageState extends State<HomePage> {
       appBar: AppBar(
         title: Text('MealPlanner', style: TextStyle(color: Colors.white)),
         backgroundColor: Colors.orange,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.info_outline, color: Colors.white),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const AboutScreen()),
+              );
+            },
+            tooltip: 'Sobre',
+          ),
+        ],
       ),
       body: SingleChildScrollView(
         padding: EdgeInsets.fromLTRB(20.0, 200, 20.0, 20.0),
@@ -209,6 +222,24 @@ class _HomePageState extends State<HomePage> {
                     ),
                   ),
                 ],
+              ),
+
+              // Botão Sobre
+              const SizedBox(height: 20),
+              TextButton.icon(
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const AboutScreen(),
+                    ),
+                  );
+                },
+                icon: const Icon(Icons.info_outline, color: Colors.grey),
+                label: const Text(
+                  'Sobre o aplicativo',
+                  style: TextStyle(color: Colors.grey),
+                ),
               ),
             ],
           ),
