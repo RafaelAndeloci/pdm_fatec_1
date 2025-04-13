@@ -5,6 +5,8 @@ import 'package:pdm_fatec_1/view/register/register_view.dart';
 // Importe a tela de dashboard
 
 class HomePage extends StatefulWidget {
+  const HomePage({super.key});
+
   @override
   _HomePageState createState() => _HomePageState();
 }
@@ -149,6 +151,14 @@ class _HomePageState extends State<HomePage> {
               // Botão de Login
               ElevatedButton(
                 onPressed: _isLoading ? null : _login,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.orange, // Cor do botão
+                  // I dont know how to put width: 100% in a button, this framework sucks CSS is superior.
+                  padding: EdgeInsets.symmetric(vertical: 15, horizontal: 154),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
                 child:
                     _isLoading
                         ? SizedBox(
@@ -160,14 +170,6 @@ class _HomePageState extends State<HomePage> {
                           ),
                         )
                         : Text('Entrar', style: TextStyle(color: Colors.white)),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.orange, // Cor do botão
-                  // I dont know how to put width: 100% in a button, this framework sucks CSS is superior.
-                  padding: EdgeInsets.symmetric(vertical: 15, horizontal: 154),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                ),
               ),
               SizedBox(height: 20),
 

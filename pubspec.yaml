@@ -36,6 +36,9 @@ dependencies:
   cupertino_icons: ^1.0.8
   device_preview: ^1.2.0
   get_it: ^8.0.3
+  shared_preferences: ^2.2.2
+  uuid: ^4.2.1
+  provider: ^6.1.1
 
 dev_dependencies:
   flutter_test:

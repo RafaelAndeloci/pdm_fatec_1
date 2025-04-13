@@ -1,7 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:pdm_fatec_1/controller/meal/meal_controller.dart';
+import 'package:pdm_fatec_1/controller/settings/user_settings_controller.dart';
+import 'package:pdm_fatec_1/model/meal_model.dart';
+import 'package:pdm_fatec_1/view/add_meal/add_meal_view.dart';
+import 'package:pdm_fatec_1/view/meal_history/meal_history_view.dart';
+import 'package:pdm_fatec_1/view/settings/settings_view.dart';
+import 'package:pdm_fatec_1/view/shop_list/shop_list_view.dart';
+import 'package:provider/provider.dart';
 
 class DashboardScreen extends StatefulWidget {
-  const DashboardScreen({Key? key}) : super(key: key);
+  const DashboardScreen({super.key});
 
   @override
   State<DashboardScreen> createState() => _DashboardScreenState();
@@ -9,47 +17,6 @@ class DashboardScreen extends StatefulWidget {
 
 class _DashboardScreenState extends State<DashboardScreen> {
   int _selectedIndex = 0;
-  final String _username = "Usuário"; // Seria obtido do sistema de autenticação
-
-  // Exemplo de dados de refeições para demonstração
-  final List<Map<String, dynamic>> _todayMeals = [
-    {
-      'time': '07:00',
-      'name': 'Café da Manhã',
-      'description': 'Aveia com frutas e mel',
-      'calories': 320,
-      'protein': 12,
-      'carbs': 45,
-      'fat': 8,
-    },
-    {
-      'time': '12:00',
-      'name': 'Almoço',
-      'description': 'Salada com frango grelhado',
-      'calories': 480,
-      'protein': 35,
-      'carbs': 25,
-      'fat': 15,
-    },
-    {
-      'time': '16:00',
-      'name': 'Lanche',
-      'description': 'Iogurte com granola',
-      'calories': 180,
-      'protein': 8,
-      'carbs': 20,
-      'fat': 5,
-    },
-    {
-      'time': '20:00',
-      'name': 'Jantar',
-      'description': 'Sopa de legumes',
-      'calories': 250,
-      'protein': 10,
-      'carbs': 30,
-      'fat': 6,
-    },
-  ];
 
   @override
   Widget build(BuildContext context) {
@@ -120,6 +87,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   });
                 },
                 backgroundColor: Colors.orange,
+                heroTag: 'dashboardFab',
                 child: const Icon(Icons.add),
               )
               : null,
@@ -128,23 +96,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   // Tab Início
   Widget _buildHomeTab() {
-    // Calcular os totais nutricionais do dia
-    int totalCalories = _todayMeals.fold(
-      0,
-      (sum, meal) => sum + (meal['calories'] as int),
-    );
-    int totalProtein = _todayMeals.fold(
-      0,
-      (sum, meal) => sum + (meal['protein'] as int),
-    );
-    int totalCarbs = _todayMeals.fold(
-      0,
-      (sum, meal) => sum + (meal['carbs'] as int),
-    );
-    int totalFat = _todayMeals.fold(
-      0,
-      (sum, meal) => sum + (meal['fat'] as int),
-    );
+    final mealController = Provider.of<MealController>(context);
+    final userSettingsController = Provider.of<UserSettingsController>(context);
+
+    final now = DateTime.now();
+    final List<Meal> todayMeals = mealController.getMealsForDay(now);
+    final nutritionStats = mealController.getNutritionStatsForDay(now);
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16.0),
@@ -169,7 +126,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'Olá, $_username!',
+                            'Olá, ${userSettingsController.userName}!',
                             style: const TextStyle(
                               fontSize: 22,
                               fontWeight: FontWeight.bold,
@@ -208,22 +165,22 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     children: [
                       _buildNutrientIndicator(
                         'Calorias',
-                        '$totalCalories kcal',
+                        '${nutritionStats['calories']} kcal',
                         Colors.orange,
                       ),
                       _buildNutrientIndicator(
                         'Proteínas',
-                        '${totalProtein}g',
+                        '${nutritionStats['protein']}g',
                         Colors.red,
                       ),
                       _buildNutrientIndicator(
                         'Carboidratos',
-                        '${totalCarbs}g',
+                        '${nutritionStats['carbs']}g',
                         Colors.blue,
                       ),
                       _buildNutrientIndicator(
                         'Gorduras',
-                        '${totalFat}g',
+                        '${nutritionStats['fat']}g',
                         Colors.purple,
                       ),
                     ],
@@ -258,115 +215,166 @@ class _DashboardScreenState extends State<DashboardScreen> {
           const SizedBox(height: 10),
 
           // Lista de refeições
-          ListView.builder(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            itemCount: _todayMeals.length,
-            itemBuilder: (context, index) {
-              final meal = _todayMeals[index];
-              return Card(
-                margin: const EdgeInsets.only(bottom: 12),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: ListTile(
-                  contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 8,
-                  ),
-                  leading: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(
-                        meal['time'],
-                        style: const TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 16,
-                        ),
+          todayMeals.isEmpty
+              ? _buildEmptyMealsList()
+              : ListView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                itemCount: todayMeals.length,
+                itemBuilder: (context, index) {
+                  final meal = todayMeals[index];
+                  return Card(
+                    margin: const EdgeInsets.only(bottom: 12),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: ListTile(
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 8,
                       ),
-                    ],
-                  ),
-                  title: Text(
-                    meal['name'],
-                    style: const TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                  subtitle: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(meal['description']),
-                      const SizedBox(height: 4),
-                      Text(
-                        '${meal['calories']} kcal | ${meal['protein']}g proteína',
-                        style: TextStyle(color: Colors.grey[600], fontSize: 12),
+                      leading: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            meal.time,
+                            style: const TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16,
+                            ),
+                          ),
+                        ],
                       ),
-                    ],
-                  ),
-                  trailing: IconButton(
-                    icon: const Icon(Icons.more_vert),
-                    onPressed: () {
-                      // Exibir opções para a refeição
-                    },
-                  ),
-                  onTap: () {
-                    // Abrir detalhes da refeição
-                  },
-                ),
-              );
-            },
-          ),
+                      title: Text(
+                        meal.name,
+                        style: const TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                      subtitle: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(meal.description),
+                          const SizedBox(height: 4),
+                          Text(
+                            '${meal.calories} kcal | ${meal.protein}g proteína',
+                            style: TextStyle(
+                              color: Colors.grey[600],
+                              fontSize: 12,
+                            ),
+                          ),
+                        ],
+                      ),
+                      trailing: PopupMenuButton<String>(
+                        onSelected: (value) {
+                          if (value == 'delete') {
+                            _showDeleteConfirmation(meal.id);
+                          }
+                        },
+                        itemBuilder:
+                            (context) => [
+                              const PopupMenuItem<String>(
+                                value: 'edit',
+                                child: Text('Editar'),
+                              ),
+                              const PopupMenuItem<String>(
+                                value: 'delete',
+                                child: Text('Excluir'),
+                              ),
+                            ],
+                      ),
+                      onTap: () {
+                        // Abrir detalhes da refeição
+                      },
+                    ),
+                  );
+                },
+              ),
         ],
       ),
     );
   }
 
-  // Tab Adicionar Refeição (placeholder)
-  Widget _buildAddMealTab() {
+  // Widget para exibir quando não há refeições
+  Widget _buildEmptyMealsList() {
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Icon(Icons.restaurant, size: 80, color: Colors.orange),
+          Icon(Icons.restaurant, size: 80, color: Colors.grey[300]),
           const SizedBox(height: 16),
-          const Text(
-            'Adicionar Nova Refeição',
-            style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 16),
-          const Text(
-            'Aqui você pode adicionar suas refeições ao plano',
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 32),
-          ElevatedButton.icon(
-            onPressed: () {
-              // Implementar adição de refeição
-            },
-            icon: const Icon(Icons.add),
-            label: const Text('Nova Refeição'),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.orange,
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+          Text(
+            'Nenhuma refeição planejada para hoje',
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              color: Colors.grey[600],
             ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Adicione refeições usando o botão +',
+            style: TextStyle(color: Colors.grey[500]),
           ),
         ],
       ),
     );
   }
 
-  // Tab Lista de Compras (placeholder)
+  // Diálogo de confirmação para excluir uma refeição
+  void _showDeleteConfirmation(String mealId) {
+    showDialog(
+      context: context,
+      builder:
+          (context) => AlertDialog(
+            title: const Text('Confirmar exclusão'),
+            content: const Text(
+              'Tem certeza que deseja excluir esta refeição?',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: const Text('Cancelar'),
+              ),
+              TextButton(
+                onPressed: () {
+                  final mealController = Provider.of<MealController>(
+                    context,
+                    listen: false,
+                  );
+                  mealController.deleteMeal(mealId);
+                  Navigator.of(context).pop();
+
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Refeição excluída com sucesso'),
+                    ),
+                  );
+                },
+                style: TextButton.styleFrom(foregroundColor: Colors.red),
+                child: const Text('Excluir'),
+              ),
+            ],
+          ),
+    );
+  }
+
+  // Tab Adicionar Refeição
+  Widget _buildAddMealTab() {
+    return const AddMealScreen();
+  }
+
+  // Tab Lista de Compras
   Widget _buildShoppingListTab() {
-    return const Center(child: Text('Lista de Compras - Em construção'));
+    return const ShoppingListScreen();
   }
 
-  // Tab Histórico (placeholder)
+  // Tab Histórico
   Widget _buildHistoryTab() {
-    return const Center(child: Text('Histórico de Refeições - Em construção'));
+    return const MealHistoryScreen();
   }
 
-  // Tab Configurações (placeholder)
+  // Tab Configurações
   Widget _buildSettingsTab() {
-    return const Center(child: Text('Configurações - Em construção'));
+    return const SettingsScreen();
   }
 
   // Widget auxiliar para indicadores nutricionais
@@ -377,7 +385,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
           width: 60,
           height: 60,
           decoration: BoxDecoration(
-            color: color.withOpacity(0.1),
+            color: color.withAlpha(25),
             borderRadius: BorderRadius.circular(30),
           ),
           child: Center(
@@ -395,40 +403,5 @@ class _DashboardScreenState extends State<DashboardScreen> {
         Text(label, style: TextStyle(fontSize: 12, color: Colors.grey[600])),
       ],
     );
-  }
-
-  // Função para obter a data atual formatada
-  String _getCurrentDate() {
-    final now = DateTime.now();
-    final dayNames = [
-      'Segunda',
-      'Terça',
-      'Quarta',
-      'Quinta',
-      'Sexta',
-      'Sábado',
-      'Domingo',
-    ];
-    final monthNames = [
-      'Janeiro',
-      'Fevereiro',
-      'Março',
-      'Abril',
-      'Maio',
-      'Junho',
-      'Julho',
-      'Agosto',
-      'Setembro',
-      'Outubro',
-      'Novembro',
-      'Dezembro',
-    ];
-
-    final dayName = dayNames[now.weekday - 1];
-    final day = now.day;
-    final month = monthNames[now.month - 1];
-    final year = now.year;
-
-    return '$dayName, $day de $month de $year';
   }
 }
