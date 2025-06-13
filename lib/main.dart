@@ -1,4 +1,5 @@
 import 'package:device_preview/device_preview.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:pdm_fatec_1/controller/auth/auth_controller.dart';
 import 'package:pdm_fatec_1/controller/meal/meal_controller.dart';
@@ -8,12 +9,14 @@ import 'package:pdm_fatec_1/services/service_locator.dart';
 import 'package:pdm_fatec_1/view/home/home_view.dart';
 import 'package:provider/provider.dart';
 
+import 'firebase_options.dart';
+
 // Chave global para o navegador
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   // Inicializa as dependências
   await setupDependencies();
 

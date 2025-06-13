@@ -21,6 +21,14 @@ class User {
     };
   }
 
+  Map<String, dynamic> toJson() {
+    return <String, dynamic>{'email': email, 'name': name, 'id': id};
+  }
+
+  factory User.fromJson(Map<String, dynamic> json) {
+    return User(id: json['id'], email: json['email'], name: json['name']);
+  }
+
   // Criar um objeto a partir de um mapa (para recuperação de dados)
   factory User.fromMap(Map<String, dynamic> map) {
     return User(

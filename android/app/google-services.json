@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "843012205767",
+    "project_id": "pdm-fatec-1",
+    "storage_bucket": "pdm-fatec-1.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:843012205767:android:d82dc7e7f7dbdf9313a2e2",
+        "android_client_info": {
+          "package_name": "com.example.pdm_fatec_1"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyC8qNm3IDEcgjGUK6v3uhkpif_FFylCVJA"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

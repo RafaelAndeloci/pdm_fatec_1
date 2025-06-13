@@ -1,3 +1,4 @@
+import 'package:firebase_auth/firebase_auth.dart' show FirebaseAuth;
 import 'package:flutter/material.dart';
 import 'package:pdm_fatec_1/model/auth_model.dart';
 import 'package:pdm_fatec_1/services/storage_service.dart';
@@ -6,6 +7,8 @@ class AuthController with ChangeNotifier {
   static const String _storageKey = 'current_user';
 
   final StorageService _storageService;
+  final FirebaseAuth auth = FirebaseAuth.instance;
+
   User _currentUser = User.guest();
 
   AuthController(this._storageService) {
