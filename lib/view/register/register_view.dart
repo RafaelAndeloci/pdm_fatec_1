@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:pdm_fatec_1/controller/auth/auth_controller.dart';
+import 'package:provider/provider.dart';
 
 class RegistrationScreen extends StatefulWidget {
   const RegistrationScreen({super.key});
@@ -82,7 +84,6 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
   }
 
   void _register() async {
-    // Valida o formulário
     if (!_formKey.currentState!.validate()) {
       return;
     }
@@ -93,16 +94,17 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
     });
 
     try {
-      // Em um app real, você implementaria a chamada de API aqui
-      await Future.delayed(const Duration(seconds: 2));
+      final success = await context.read<AuthController>().register(
+        _usernameController.text,
+        _emailController.text,
+        _passwordController.text,
+      );
 
-      // Simular sucesso e navegar para tela principal
-      if (mounted) {
+      if (success && mounted) {
         setState(() {
           _isLoading = false;
         });
 
-        // Exibir mensagem de sucesso e redirecionar
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Cadastro realizado com sucesso!'),
@@ -110,11 +112,12 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
           ),
         );
 
-        // Em um app real, você navegaria para a tela principal ou de login
-        // Navigator.pushReplacementNamed(context, '/home');
-        Navigator.pop(
-          context,
-        ); // Temporariamente, apenas volta para a tela anterior
+        Navigator.pop(context);
+      } else if (mounted) {
+        setState(() {
+          _isLoading = false;
+          _errorMessage = "Erro ao realizar cadastro. Tente novamente.";
+        });
       }
     } catch (e) {
       if (mounted) {
