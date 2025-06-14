@@ -80,7 +80,7 @@ class UserSettings {
   static UserSettings defaultSettings() {
     return UserSettings(
       name: 'Usuário',
-      email: 'usuario@exemplo.com',
+      email: '',
       dietaryPreferences: {
         'Vegetariano': false,
         'Vegano': false,

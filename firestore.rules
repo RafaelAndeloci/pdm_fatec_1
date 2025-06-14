@@ -23,13 +23,21 @@ service cloud.firestore {
     }
 
     // Regras para a coleção de refeições
-    match /meals/{userId}/user_meals/{mealId} {
+    match /meals/{userId} {
       allow read, write: if isAuthenticated() && isOwner(userId);
+      
+      match /user_meals/{mealId} {
+        allow read, write: if isAuthenticated() && isOwner(userId);
+      }
     }
 
     // Regras para a coleção de lista de compras
-    match /shopping_list/{userId}/items/{itemId} {
+    match /shopping_list/{userId} {
       allow read, write: if isAuthenticated() && isOwner(userId);
+      
+      match /items/{itemId} {
+        allow read, write: if isAuthenticated() && isOwner(userId);
+      }
     }
 
     // Regra padrão - negar acesso a todas as outras coleções

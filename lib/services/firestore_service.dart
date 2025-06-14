@@ -29,7 +29,8 @@ class FirestoreService {
 
   // Verificar se o ID do usuário é válido
   bool _isValidUserId(String userId) {
-    return userId.isNotEmpty && userId == currentUserId;
+    final currentUser = _auth.currentUser;
+    return currentUser != null && userId == currentUser.uid;
   }
 
   // Métodos para usuários
@@ -38,7 +39,7 @@ class FirestoreService {
       throw Exception('Usuário não autenticado ou ID inválido');
     }
 
-    await _firestore.collection('users').doc(user.uid).set({
+    await _usersRef.doc(user.uid).set({
       'uid': user.uid,
       'email': user.email,
       'displayName': user.displayName,

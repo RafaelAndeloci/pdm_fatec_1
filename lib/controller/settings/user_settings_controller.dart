@@ -1,7 +1,9 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:get_it/get_it.dart';
 import 'package:pdm_fatec_1/model/user_settings_model.dart';
+import 'package:pdm_fatec_1/services/auth_service.dart';
 import 'package:pdm_fatec_1/services/firestore_service.dart';
 import 'package:pdm_fatec_1/services/storage_service.dart';
 
@@ -30,6 +32,14 @@ class UserSettingsController with ChangeNotifier {
     if (_userId != userId) {
       _userId = userId;
       _settingsSubscription?.cancel();
+      if (userId != null) {
+        // Atualizar o email quando o usuário fizer login
+        final authService = GetIt.I<AuthService>();
+        final currentUser = authService.currentUser;
+        if (currentUser != null) {
+          _settings = _settings.copyWith(email: currentUser.email ?? '');
+        }
+      }
       _loadSettings();
     }
   }
@@ -56,7 +66,12 @@ class UserSettingsController with ChangeNotifier {
           .getUserSettingsStream(_userId!)
           .listen((settings) {
             if (settings != null) {
+              // Manter o email atual se não houver um no Firestore
+              final currentEmail = _settings.email;
               _settings = settings;
+              if (settings.email.isEmpty && currentEmail.isNotEmpty) {
+                _settings = _settings.copyWith(email: currentEmail);
+              }
               notifyListeners();
             }
           });

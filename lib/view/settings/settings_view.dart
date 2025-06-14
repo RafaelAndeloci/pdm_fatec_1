@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:pdm_fatec_1/controller/auth/auth_controller.dart';
 import 'package:pdm_fatec_1/controller/settings/user_settings_controller.dart';
 import 'package:pdm_fatec_1/model/user_settings_model.dart';
 import 'package:provider/provider.dart';
@@ -27,32 +28,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
   bool _notifyWeeklyReport = true;
 
   // Dados do usuário
-  final TextEditingController _nameController = TextEditingController(
-    text: 'Usuário',
-  );
-  final TextEditingController _emailController = TextEditingController(
-    text: 'usuario@exemplo.com',
-  );
-  final TextEditingController _heightController = TextEditingController(
-    text: '170',
-  );
-  final TextEditingController _weightController = TextEditingController(
-    text: '70',
-  );
+  final TextEditingController _nameController = TextEditingController();
+  final TextEditingController _emailController = TextEditingController();
+  final TextEditingController _heightController = TextEditingController();
+  final TextEditingController _weightController = TextEditingController();
 
   // Metas nutricionais
-  final TextEditingController _caloriesGoalController = TextEditingController(
-    text: '2000',
-  );
-  final TextEditingController _proteinGoalController = TextEditingController(
-    text: '100',
-  );
-  final TextEditingController _carbsGoalController = TextEditingController(
-    text: '250',
-  );
-  final TextEditingController _fatGoalController = TextEditingController(
-    text: '65',
-  );
+  final TextEditingController _caloriesGoalController = TextEditingController();
+  final TextEditingController _proteinGoalController = TextEditingController();
+  final TextEditingController _carbsGoalController = TextEditingController();
+  final TextEditingController _fatGoalController = TextEditingController();
 
   // Tema do aplicativo
   String _selectedTheme = 'Claro';
@@ -61,6 +46,18 @@ class _SettingsScreenState extends State<SettingsScreen> {
   @override
   void initState() {
     super.initState();
+    _checkAuthentication();
+  }
+
+  void _checkAuthentication() {
+    final authController = Provider.of<AuthController>(context, listen: false);
+
+    if (!authController.isAuthenticated) {
+      // Redirecionar para a tela de login
+      Navigator.of(context).pushReplacementNamed('/login');
+      return;
+    }
+
     _loadUserSettings();
   }
 
@@ -71,10 +68,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
       listen: false,
     );
     final settings = userSettingsController.settings;
+    final authController = Provider.of<AuthController>(context, listen: false);
 
     setState(() {
       _nameController.text = settings.name;
-      _emailController.text = settings.email;
+      _emailController.text = authController.currentUser.email;
       _heightController.text = settings.height.toString();
       _weightController.text = settings.weight.toString();
       _caloriesGoalController.text = settings.caloriesGoal.toString();
@@ -94,6 +92,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       context,
       listen: false,
     );
+    final authController = Provider.of<AuthController>(context, listen: false);
 
     // Validar e converter valores numéricos
     final int height = int.tryParse(_heightController.text) ?? 170;
@@ -106,7 +105,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     // Criar objeto de configurações
     final updatedSettings = UserSettings(
       name: _nameController.text,
-      email: _emailController.text,
+      email: authController.currentUser.email,
       height: height,
       weight: weight,
       dietaryPreferences: _dietaryPreferences,
@@ -144,81 +143,110 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text(
-          'Configurações',
-          style: TextStyle(color: Colors.white),
-        ),
-        backgroundColor: Colors.orange,
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Perfil do usuário
-            _buildProfileSection(),
-            const SizedBox(height: 24),
+    return Consumer<AuthController>(
+      builder: (context, authController, child) {
+        if (!authController.isAuthenticated) {
+          return const Scaffold(
+            body: Center(child: CircularProgressIndicator()),
+          );
+        }
 
-            // Preferências alimentares
-            _buildDietaryPreferencesSection(),
-            const SizedBox(height: 24),
-
-            // Metas nutricionais
-            _buildNutritionalGoalsSection(),
-            const SizedBox(height: 24),
-
-            // Notificações
-            _buildNotificationsSection(),
-            const SizedBox(height: 24),
-
-            // Configurações do aplicativo
-            _buildAppSettingsSection(),
-            const SizedBox(height: 24),
-
-            // Botão de salvar
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: _saveSettings,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.orange,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 15),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                ),
-                child: const Text(
-                  'Salvar Configurações',
-                  style: TextStyle(fontSize: 16),
-                ),
-              ),
+        return Scaffold(
+          appBar: AppBar(
+            title: const Text(
+              'Configurações',
+              style: TextStyle(color: Colors.white),
             ),
-            const SizedBox(height: 8),
+            backgroundColor: Colors.orange,
+          ),
+          body: Consumer<UserSettingsController>(
+            builder: (context, userSettingsController, child) {
+              final settings = userSettingsController.settings;
 
-            // Logout
-            SizedBox(
-              width: double.infinity,
-              child: OutlinedButton.icon(
-                onPressed: () {
-                  // Lógica para fazer logout
-                  Navigator.of(context).pushReplacementNamed('/');
-                },
-                icon: const Icon(Icons.logout),
-                label: const Text('Sair da Conta'),
-                style: OutlinedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 15),
-                  side: const BorderSide(color: Colors.red),
-                  foregroundColor: Colors.red,
+              // Atualizar os controladores quando as configurações mudarem
+              _nameController.text = settings.name;
+              _emailController.text = settings.email;
+              _heightController.text = settings.height.toString();
+              _weightController.text = settings.weight.toString();
+              _caloriesGoalController.text = settings.caloriesGoal.toString();
+              _proteinGoalController.text = settings.proteinGoal.toString();
+              _carbsGoalController.text = settings.carbsGoal.toString();
+              _fatGoalController.text = settings.fatGoal.toString();
+              _dietaryPreferences = Map<String, bool>.from(
+                settings.dietaryPreferences,
+              );
+              _notifyMealReminders = settings.notifyMealReminders;
+              _notifyShoppingList = settings.notifyShoppingList;
+              _notifyWeeklyReport = settings.notifyWeeklyReport;
+              _selectedTheme = settings.theme;
+
+              return SingleChildScrollView(
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Perfil do usuário
+                    _buildProfileSection(),
+                    const SizedBox(height: 24),
+
+                    // Preferências alimentares
+                    _buildDietaryPreferencesSection(),
+                    const SizedBox(height: 24),
+
+                    // Metas nutricionais
+                    _buildNutritionalGoalsSection(),
+                    const SizedBox(height: 24),
+
+                    // Notificações
+                    _buildNotificationsSection(),
+                    const SizedBox(height: 24),
+
+                    // Botão de salvar
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton(
+                        onPressed: _saveSettings,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.orange,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 15),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                        ),
+                        child: const Text(
+                          'Salvar Configurações',
+                          style: TextStyle(fontSize: 16),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+
+                    // Logout
+                    SizedBox(
+                      width: double.infinity,
+                      child: OutlinedButton.icon(
+                        onPressed: () {
+                          // Lógica para fazer logout
+                          Navigator.of(context).pushReplacementNamed('/');
+                        },
+                        icon: const Icon(Icons.logout),
+                        label: const Text('Sair da Conta'),
+                        style: OutlinedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 15),
+                          side: const BorderSide(color: Colors.red),
+                          foregroundColor: Colors.red,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 32),
+                  ],
                 ),
-              ),
-            ),
-            const SizedBox(height: 32),
-          ],
-        ),
-      ),
+              );
+            },
+          ),
+        );
+      },
     );
   }
 
@@ -273,11 +301,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       // Email (apenas exibição)
                       TextFormField(
                         controller: _emailController,
-                        decoration: const InputDecoration(
+                        decoration: InputDecoration(
                           labelText: 'Email',
-                          border: OutlineInputBorder(),
+                          border: const OutlineInputBorder(),
                           enabled: false,
+                          filled: true,
+                          fillColor: Colors.grey.shade200,
                         ),
+                        readOnly: true,
                       ),
                     ],
                   ),
@@ -491,83 +522,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 });
               },
               activeColor: Colors.orange,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  // Seção de Configurações do App
-  Widget _buildAppSettingsSection() {
-    return Card(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
-      elevation: 4,
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Configurações do Aplicativo',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 16),
-            // Seleção de tema
-            DropdownButtonFormField<String>(
-              decoration: const InputDecoration(
-                labelText: 'Tema do Aplicativo',
-                border: OutlineInputBorder(),
-                prefixIcon: Icon(Icons.color_lens),
-              ),
-              value: _selectedTheme,
-              onChanged: (String? newValue) {
-                if (newValue != null) {
-                  setState(() {
-                    _selectedTheme = newValue;
-                  });
-                }
-              },
-              items:
-                  _themeOptions.map<DropdownMenuItem<String>>((String value) {
-                    return DropdownMenuItem<String>(
-                      value: value,
-                      child: Text(value),
-                    );
-                  }).toList(),
-            ),
-            const SizedBox(height: 16),
-            // Botões de ação
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 8),
-              child: OutlinedButton.icon(
-                onPressed: () {
-                  // Implementar exportação de dados
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Dados exportados com sucesso!'),
-                    ),
-                  );
-                },
-                icon: const Icon(Icons.download),
-                label: const Text('Exportar Dados'),
-                style: OutlinedButton.styleFrom(
-                  minimumSize: const Size(double.infinity, 50),
-                ),
-              ),
-            ),
-            OutlinedButton.icon(
-              onPressed: () {
-                // Implementar limpeza de cache
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Cache limpo com sucesso!')),
-                );
-              },
-              icon: const Icon(Icons.cleaning_services),
-              label: const Text('Limpar Cache'),
-              style: OutlinedButton.styleFrom(
-                minimumSize: const Size(double.infinity, 50),
-              ),
             ),
           ],
         ),

@@ -35,7 +35,7 @@ class AuthController with ChangeNotifier {
   bool get isLoading => _isLoading;
 
   void _init() {
-    _authService.authStateChanges.listen((firebase_auth.User? user) {
+    _authService.authStateChanges.listen((firebase_auth.User? user) async {
       _firebaseUser = user;
       if (user != null) {
         _currentUser = User(
@@ -45,7 +45,7 @@ class AuthController with ChangeNotifier {
           isAuthenticated: true,
         );
         // Carregar dados do Firestore quando o usuário fizer login
-        _loadUserData();
+        await _loadUserData();
         // Configurar ID do usuário nos outros controllers
         _setupUserControllers(user.uid);
       } else {
@@ -80,9 +80,10 @@ class AuthController with ChangeNotifier {
         if (userProfile != null) {
           _currentUser = User.fromMap(userProfile);
 
-          // Atualizar nome do usuário no UserSettingsController
+          // Atualizar nome e email do usuário no UserSettingsController
           final userSettingsController = getIt<UserSettingsController>();
           await userSettingsController.updateName(_currentUser.name);
+          await userSettingsController.updateEmail(_currentUser.email);
 
           notifyListeners();
         } else {
@@ -91,14 +92,16 @@ class AuthController with ChangeNotifier {
             id: _firebaseUser!.uid,
             email: _firebaseUser!.email ?? '',
             name: _firebaseUser!.displayName ?? 'Usuário',
+            isAuthenticated: true,
           );
 
           await _firestoreService.createUserProfile(_firebaseUser!);
           _currentUser = user;
 
-          // Atualizar nome do usuário no UserSettingsController
+          // Atualizar nome e email do usuário no UserSettingsController
           final userSettingsController = getIt<UserSettingsController>();
           await userSettingsController.updateName(user.name);
+          await userSettingsController.updateEmail(user.email);
 
           notifyListeners();
         }
@@ -109,6 +112,7 @@ class AuthController with ChangeNotifier {
           id: _firebaseUser!.uid,
           email: _firebaseUser!.email ?? '',
           name: _firebaseUser!.displayName ?? 'Usuário',
+          isAuthenticated: true,
         );
         notifyListeners();
       }
@@ -134,6 +138,10 @@ class AuthController with ChangeNotifier {
 
   Future<bool> register(String email, String password, String name) async {
     try {
+      _isLoading = true;
+      _error = null;
+      notifyListeners();
+
       final userCredential = await _authService.createUserWithEmailAndPassword(
         email: email,
         password: password,
@@ -150,45 +158,26 @@ class AuthController with ChangeNotifier {
         final userSettingsController = getIt<UserSettingsController>();
         await userSettingsController.updateName(name);
 
-        _currentUser = User(
-          id: userCredential.user!.uid,
-          email: email,
-          name: name,
-        );
-        notifyListeners();
         return true;
       }
       return false;
-    } on firebase_auth.FirebaseAuthException catch (e) {
-      String message;
-      switch (e.code) {
-        case 'weak-password':
-          message = 'A senha é muito fraca.';
-          break;
-        case 'email-already-in-use':
-          message = 'Este e-mail já está em uso.';
-          break;
-        case 'invalid-email':
-          message = 'E-mail inválido.';
-          break;
-        default:
-          message = 'Erro ao criar conta: ${e.message}';
-      }
-      throw Exception(message);
     } catch (e) {
-      throw Exception('Erro ao criar conta: $e');
+      _error = e.toString();
+      return false;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
     }
   }
 
   Future<void> logout() async {
     try {
       _isLoading = true;
-      _error = null;
       notifyListeners();
 
       await _authService.signOut();
       _currentUser = User.guest();
-      await _storageService.removeData(_storageKey);
+      _clearUserControllers();
     } catch (e) {
       _error = e.toString();
     } finally {
