@@ -3,6 +3,7 @@ import 'package:pdm_fatec_1/controller/meal/meal_controller.dart';
 import 'package:pdm_fatec_1/controller/settings/user_settings_controller.dart';
 import 'package:pdm_fatec_1/model/meal_model.dart';
 import 'package:pdm_fatec_1/view/add_meal/add_meal_view.dart';
+import 'package:pdm_fatec_1/view/edit_meal/edit_meal_view.dart';
 import 'package:pdm_fatec_1/view/meal_history/meal_history_view.dart';
 import 'package:pdm_fatec_1/view/settings/settings_view.dart';
 import 'package:pdm_fatec_1/view/shop_list/shop_list_view.dart';
@@ -282,7 +283,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       ),
                       trailing: PopupMenuButton<String>(
                         onSelected: (value) {
-                          if (value == 'delete') {
+                          if (value == 'edit') {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder:
+                                    (context) => EditMealScreen(meal: meal),
+                              ),
+                            );
+                          } else if (value == 'delete') {
                             _showDeleteConfirmation(meal.id);
                           }
                         },

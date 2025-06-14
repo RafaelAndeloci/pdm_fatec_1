@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:pdm_fatec_1/controller/meal/meal_controller.dart';
 import 'package:pdm_fatec_1/model/meal_model.dart';
+import 'package:pdm_fatec_1/view/edit_meal/edit_meal_view.dart';
 import 'package:provider/provider.dart';
 
 class MealHistoryScreen extends StatefulWidget {
@@ -280,30 +281,6 @@ class _MealHistoryScreenState extends State<MealHistoryScreen> {
               Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Imagem ou placeholder
-                  Container(
-                    width: 80,
-                    height: 80,
-                    decoration: BoxDecoration(
-                      color: Colors.grey[300],
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child:
-                        meal.imageUrl != null
-                            ? ClipRRect(
-                              borderRadius: BorderRadius.circular(8),
-                              child: Image.network(
-                                meal.imageUrl!,
-                                fit: BoxFit.cover,
-                              ),
-                            )
-                            : Icon(
-                              Icons.restaurant,
-                              color: Colors.grey[600],
-                              size: 40,
-                            ),
-                  ),
-                  const SizedBox(width: 16),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -318,35 +295,35 @@ class _MealHistoryScreenState extends State<MealHistoryScreen> {
                         const SizedBox(height: 4),
                         Text(
                           meal.description,
-                          style: TextStyle(color: Colors.grey[700]),
-                        ),
-                        const SizedBox(height: 8),
-                        Row(
-                          children: [
-                            // Avaliação com estrelas
-                            Row(
-                              children: List.generate(5, (index) {
-                                return Icon(
-                                  index < meal.rating
-                                      ? Icons.star
-                                      : Icons.star_border,
-                                  color: Colors.amber,
-                                  size: 18,
-                                );
-                              }),
-                            ),
-                            const SizedBox(width: 8),
-                            Text(
-                              '${meal.difficulty} • ${meal.prepTime} min',
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: Colors.grey[600],
-                              ),
-                            ),
-                          ],
+                          style: TextStyle(color: Colors.grey[600]),
                         ),
                       ],
                     ),
+                  ),
+                  PopupMenuButton<String>(
+                    onSelected: (value) {
+                      if (value == 'edit') {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => EditMealScreen(meal: meal),
+                          ),
+                        );
+                      } else if (value == 'delete') {
+                        _showDeleteConfirmation(meal.id);
+                      }
+                    },
+                    itemBuilder:
+                        (context) => [
+                          const PopupMenuItem<String>(
+                            value: 'edit',
+                            child: Text('Editar'),
+                          ),
+                          const PopupMenuItem<String>(
+                            value: 'delete',
+                            child: Text('Excluir'),
+                          ),
+                        ],
                   ),
                 ],
               ),
