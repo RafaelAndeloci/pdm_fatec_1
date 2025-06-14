@@ -1,6 +1,7 @@
 {
   "projects": {
-    "pdm-fatec-dev": "pdm-fatec-1"
+    "pdm-fatec-dev": "pdm-fatec-1",
+    "default": "pdm-fatec-1"
   },
   "targets": {},
   "etags": {}

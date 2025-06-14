@@ -1,1 +1,41 @@
-{"flutter":{"platforms":{"android":{"default":{"projectId":"pdm-fatec-1","appId":"1:843012205767:android:d82dc7e7f7dbdf9313a2e2","fileOutput":"android/app/google-services.json"}},"dart":{"lib/firebase_options.dart":{"projectId":"pdm-fatec-1","configurations":{"android":"1:843012205767:android:d82dc7e7f7dbdf9313a2e2","ios":"1:843012205767:ios:cc0fa3928cc7e6e213a2e2","web":"1:843012205767:web:20f51463b733179013a2e2"}}}}},"firestore":{"rules":"firestore.rules","indexes":"firestore.indexes.json"}}
+{
+  "flutter": {
+    "platforms": {
+      "android": {
+        "default": {
+          "projectId": "pdm-fatec-1",
+          "appId": "1:843012205767:android:d82dc7e7f7dbdf9313a2e2",
+          "fileOutput": "android/app/google-services.json"
+        }
+      },
+      "dart": {
+        "lib/firebase_options.dart": {
+          "projectId": "pdm-fatec-1",
+          "configurations": {
+            "android": "1:843012205767:android:d82dc7e7f7dbdf9313a2e2",
+            "ios": "1:843012205767:ios:cc0fa3928cc7e6e213a2e2",
+            "web": "1:843012205767:web:20f51463b733179013a2e2"
+          }
+        }
+      }
+    }
+  },
+  "firestore": {
+    "rules": "firestore.rules",
+    "indexes": "firestore.indexes.json"
+  },
+  "hosting": {
+    "public": "build/web",
+    "ignore": [
+      "firebase.json",
+      "**/.*",
+      "**/node_modules/**"
+    ],
+    "rewrites": [
+      {
+        "source": "**",
+        "destination": "/index.html"
+      }
+    ]
+  }
+}
