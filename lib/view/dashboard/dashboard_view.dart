@@ -112,13 +112,44 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'Olá, ${userSettingsController.userName}!',
-                            style: const TextStyle(
-                              fontSize: 22,
-                              fontWeight: FontWeight.bold,
+                            'Olá,',
+                            style: TextStyle(
+                              fontSize: 18,
+                              color: Colors.grey[600],
                             ),
                           ),
                           const SizedBox(height: 4),
+                          userSettingsController.userName.isEmpty
+                              ? Row(
+                                children: [
+                                  SizedBox(
+                                    width: 20,
+                                    height: 20,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      valueColor: AlwaysStoppedAnimation<Color>(
+                                        Colors.orange,
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    'Carregando...',
+                                    style: TextStyle(
+                                      fontSize: 22,
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.grey[400],
+                                    ),
+                                  ),
+                                ],
+                              )
+                              : Text(
+                                userSettingsController.userName,
+                                style: const TextStyle(
+                                  fontSize: 22,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
                         ],
                       ),
                       Container(

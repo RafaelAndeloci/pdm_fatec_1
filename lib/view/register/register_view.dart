@@ -95,35 +95,35 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
 
     try {
       final success = await context.read<AuthController>().register(
-        _usernameController.text,
         _emailController.text,
         _passwordController.text,
+        _usernameController.text,
       );
 
-      if (success && mounted) {
+      if (mounted) {
         setState(() {
           _isLoading = false;
         });
 
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Cadastro realizado com sucesso!'),
-            backgroundColor: Colors.green,
-          ),
-        );
-
-        Navigator.pop(context);
-      } else if (mounted) {
-        setState(() {
-          _isLoading = false;
-          _errorMessage = "Erro ao realizar cadastro. Tente novamente.";
-        });
+        if (success) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Cadastro realizado com sucesso!'),
+              backgroundColor: Colors.green,
+            ),
+          );
+          Navigator.pop(context);
+        } else {
+          setState(() {
+            _errorMessage = "Erro ao realizar cadastro. Tente novamente.";
+          });
+        }
       }
     } catch (e) {
       if (mounted) {
         setState(() {
           _isLoading = false;
-          _errorMessage = "Erro ao realizar cadastro. Tente novamente.";
+          _errorMessage = e.toString();
         });
       }
     }

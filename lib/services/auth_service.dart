@@ -25,18 +25,14 @@ class AuthService {
   }
 
   // Registro com email e senha
-  Future<UserCredential> registerWithEmailAndPassword(
-    String email,
-    String password,
-  ) async {
-    try {
-      return await _auth.createUserWithEmailAndPassword(
-        email: email,
-        password: password,
-      );
-    } catch (e) {
-      throw Exception('Erro ao criar conta: ${e.toString()}');
-    }
+  Future<UserCredential> createUserWithEmailAndPassword({
+    required String email,
+    required String password,
+  }) async {
+    return await _auth.createUserWithEmailAndPassword(
+      email: email,
+      password: password,
+    );
   }
 
   // Logout

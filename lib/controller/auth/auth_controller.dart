@@ -71,12 +71,45 @@ class AuthController with ChangeNotifier {
 
   Future<void> _loadUserData() async {
     if (_firebaseUser != null) {
-      // Carregar perfil do usuário
-      final userProfile = await _firestoreService.getUserProfile(
-        _firebaseUser!.uid,
-      );
-      if (userProfile != null) {
-        _currentUser = User.fromMap(userProfile);
+      try {
+        // Carregar perfil do usuário
+        final userProfile = await _firestoreService.getUserProfile(
+          _firebaseUser!.uid,
+        );
+
+        if (userProfile != null) {
+          _currentUser = User.fromMap(userProfile);
+
+          // Atualizar nome do usuário no UserSettingsController
+          final userSettingsController = getIt<UserSettingsController>();
+          await userSettingsController.updateName(_currentUser.name);
+
+          notifyListeners();
+        } else {
+          // Se não encontrar o perfil, criar um novo com os dados do Auth
+          final user = User(
+            id: _firebaseUser!.uid,
+            email: _firebaseUser!.email ?? '',
+            name: _firebaseUser!.displayName ?? 'Usuário',
+          );
+
+          await _firestoreService.createUserProfile(_firebaseUser!);
+          _currentUser = user;
+
+          // Atualizar nome do usuário no UserSettingsController
+          final userSettingsController = getIt<UserSettingsController>();
+          await userSettingsController.updateName(user.name);
+
+          notifyListeners();
+        }
+      } catch (e) {
+        print('Erro ao carregar dados do usuário: $e');
+        // Em caso de erro, usar dados básicos do Auth
+        _currentUser = User(
+          id: _firebaseUser!.uid,
+          email: _firebaseUser!.email ?? '',
+          name: _firebaseUser!.displayName ?? 'Usuário',
+        );
         notifyListeners();
       }
     }
@@ -99,38 +132,51 @@ class AuthController with ChangeNotifier {
     }
   }
 
-  Future<bool> register(String name, String email, String password) async {
+  Future<bool> register(String email, String password, String name) async {
     try {
-      _isLoading = true;
-      _error = null;
-      notifyListeners();
-
-      final userCredential = await _authService.registerWithEmailAndPassword(
-        email,
-        password,
+      final userCredential = await _authService.createUserWithEmailAndPassword(
+        email: email,
+        password: password,
       );
 
-      // Atualizar nome do usuário
-      await userCredential.user?.updateDisplayName(name);
-
-      // Criar perfil do usuário no Firestore
       if (userCredential.user != null) {
-        await _firestoreService.createUserProfile(userCredential.user!.uid, {
-          'id': userCredential.user!.uid,
-          'name': name,
-          'email': email,
-          'isAuthenticated': true,
-          'createdAt': DateTime.now().toIso8601String(),
-        });
-      }
+        // Atualizar o nome do usuário no Firebase Auth
+        await userCredential.user!.updateDisplayName(name);
 
-      return true;
-    } catch (e) {
-      _error = e.toString();
+        // Criar perfil do usuário no Firestore
+        await _firestoreService.createUserProfile(userCredential.user!);
+
+        // Atualizar o nome no UserSettingsController
+        final userSettingsController = getIt<UserSettingsController>();
+        await userSettingsController.updateName(name);
+
+        _currentUser = User(
+          id: userCredential.user!.uid,
+          email: email,
+          name: name,
+        );
+        notifyListeners();
+        return true;
+      }
       return false;
-    } finally {
-      _isLoading = false;
-      notifyListeners();
+    } on firebase_auth.FirebaseAuthException catch (e) {
+      String message;
+      switch (e.code) {
+        case 'weak-password':
+          message = 'A senha é muito fraca.';
+          break;
+        case 'email-already-in-use':
+          message = 'Este e-mail já está em uso.';
+          break;
+        case 'invalid-email':
+          message = 'E-mail inválido.';
+          break;
+        default:
+          message = 'Erro ao criar conta: ${e.message}';
+      }
+      throw Exception(message);
+    } catch (e) {
+      throw Exception('Erro ao criar conta: $e');
     }
   }
 

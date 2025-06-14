@@ -33,14 +33,18 @@ class FirestoreService {
   }
 
   // Métodos para usuários
-  Future<void> createUserProfile(
-    String userId,
-    Map<String, dynamic> userData,
-  ) async {
-    if (!_isValidUserId(userId)) {
+  Future<void> createUserProfile(User user) async {
+    if (!_isValidUserId(user.uid)) {
       throw Exception('Usuário não autenticado ou ID inválido');
     }
-    await _usersRef.doc(userId).set(userData);
+
+    await _firestore.collection('users').doc(user.uid).set({
+      'uid': user.uid,
+      'email': user.email,
+      'displayName': user.displayName,
+      'photoURL': user.photoURL,
+      'createdAt': FieldValue.serverTimestamp(),
+    });
   }
 
   Future<Map<String, dynamic>?> getUserProfile(String userId) async {
