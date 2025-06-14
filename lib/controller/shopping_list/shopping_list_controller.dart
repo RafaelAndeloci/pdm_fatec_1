@@ -10,15 +10,36 @@ class ShoppingListController with ChangeNotifier {
   final FirestoreService _firestoreService;
   List<ShoppingItem> _items = [];
   String? _userId;
+  String _searchQuery = '';
+  String _selectedCategory = 'Todos';
+  bool _showOnlyPending = true;
 
   ShoppingListController(this._storageService, this._firestoreService) {
     _loadItems();
   }
 
   List<ShoppingItem> get items => _items;
+  String get searchQuery => _searchQuery;
+  String get selectedCategory => _selectedCategory;
+  bool get showOnlyPending => _showOnlyPending;
 
   void setUserId(String? userId) {
     _userId = userId;
+    _loadItems();
+  }
+
+  void setSearchQuery(String query) {
+    _searchQuery = query;
+    _loadItems();
+  }
+
+  void setSelectedCategory(String category) {
+    _selectedCategory = category;
+    _loadItems();
+  }
+
+  void setShowOnlyPending(bool showOnlyPending) {
+    _showOnlyPending = showOnlyPending;
     _loadItems();
   }
 
@@ -43,22 +64,61 @@ class ShoppingListController with ChangeNotifier {
   // Carregar itens do armazenamento
   Future<void> _loadItems() async {
     if (_userId != null) {
-      // Carregar do Firestore
-      _firestoreService.getUserShoppingList(_userId!).listen((items) {
-        _items = items;
-        notifyListeners();
-      });
+      // Carregar do Firestore com filtros
+      _firestoreService
+          .searchShoppingItems(
+            _userId!,
+            searchQuery: _searchQuery,
+            category: _selectedCategory,
+            showOnlyPending: _showOnlyPending,
+          )
+          .listen((items) {
+            _items = items;
+            notifyListeners();
+          });
     } else if (_storageService.hasKey(_storageKey)) {
       // Carregar do armazenamento local
       final itemsData = _storageService.getList(_storageKey);
       if (itemsData != null) {
         _items = itemsData.map((data) => ShoppingItem.fromMap(data)).toList();
+        // Aplicar filtros localmente
+        _applyFilters();
         notifyListeners();
       }
     } else {
       _items = [];
       notifyListeners();
     }
+  }
+
+  // Aplicar filtros localmente (para armazenamento local)
+  void _applyFilters() {
+    var filteredItems = _items;
+
+    // Filtrar por categoria
+    if (_selectedCategory != 'Todos') {
+      filteredItems =
+          filteredItems
+              .where((item) => item.category == _selectedCategory)
+              .toList();
+    }
+
+    // Filtrar por status
+    if (_showOnlyPending) {
+      filteredItems = filteredItems.where((item) => !item.isChecked).toList();
+    }
+
+    // Filtrar por texto de busca
+    if (_searchQuery.isNotEmpty) {
+      final query = _searchQuery.toLowerCase();
+      filteredItems =
+          filteredItems.where((item) {
+            return item.name.toLowerCase().contains(query) ||
+                item.notes.toLowerCase().contains(query);
+          }).toList();
+    }
+
+    _items = filteredItems;
   }
 
   // Adicionar um novo item

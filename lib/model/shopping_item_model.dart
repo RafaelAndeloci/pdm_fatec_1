@@ -1,6 +1,7 @@
 class ShoppingItem {
   final String id;
   final String name;
+  final String name_lower; // Campo para busca case-insensitive
   final double quantity;
   final String unit;
   final String category;
@@ -15,13 +16,14 @@ class ShoppingItem {
     required this.category,
     this.isChecked = false,
     this.notes = '',
-  });
+  }) : name_lower = name.toLowerCase();
 
   // Converter o objeto para um mapa (para persistência)
   Map<String, dynamic> toMap() {
     return {
       'id': id,
       'name': name,
+      'name_lower': name_lower,
       'quantity': quantity,
       'unit': unit,
       'category': category,

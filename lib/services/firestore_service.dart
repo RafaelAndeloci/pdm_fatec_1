@@ -145,6 +145,76 @@ class FirestoreService {
         );
   }
 
+  // Buscar itens da lista de compras com filtros
+  Stream<List<ShoppingItem>> searchShoppingItems(
+    String userId, {
+    String? searchQuery,
+    String? category,
+    bool? showOnlyPending,
+  }) {
+    if (!_isValidUserId(userId)) {
+      throw Exception('Usuário não autenticado ou ID inválido');
+    }
+
+    // Criar uma referência para a coleção de itens do usuário
+    final itemsRef = _shoppingListRef.doc(userId).collection('items');
+
+    // Construir a consulta base
+    Query<Map<String, dynamic>> query = itemsRef;
+
+    // Aplicar filtro de status se necessário
+    if (showOnlyPending != null) {
+      query = query.where('isChecked', isEqualTo: !showOnlyPending);
+    }
+
+    // Aplicar filtro de categoria se necessário
+    if (category != null && category != 'Todos') {
+      query = query.where('category', isEqualTo: category);
+    }
+
+    // Se houver uma busca por texto
+    if (searchQuery != null && searchQuery.isNotEmpty) {
+      // Converter a busca para minúsculas para comparação
+      final searchLower = searchQuery.toLowerCase();
+
+      // Se a busca for por prefixo (palavra completa ou início de palavra)
+      if (searchLower.length >= 3) {
+        // Usar busca por prefixo no Firestore
+        query = query.orderBy('name_lower').startAt([searchLower]).endAt([
+          searchLower + '\uf8ff',
+        ]);
+      }
+    }
+
+    // Executar a consulta e retornar os resultados
+    return query.snapshots().map((snapshot) {
+      var items =
+          snapshot.docs.map((doc) => ShoppingItem.fromMap(doc.data())).toList();
+
+      // Se houver uma busca por texto, aplicar filtros adicionais localmente
+      if (searchQuery != null && searchQuery.isNotEmpty) {
+        final searchLower = searchQuery.toLowerCase();
+
+        // Filtrar por texto parcial no nome e notas
+        items =
+            items.where((item) {
+              // Se a busca for curta (menos de 3 caracteres), fazer busca parcial
+              if (searchLower.length < 3) {
+                return item.name.toLowerCase().contains(searchLower) ||
+                    item.notes.toLowerCase().contains(searchLower);
+              }
+
+              // Se a busca for mais longa, verificar se o nome começa com a busca
+              // ou se está contido nas notas
+              return item.name.toLowerCase().startsWith(searchLower) ||
+                  item.notes.toLowerCase().contains(searchLower);
+            }).toList();
+      }
+
+      return items;
+    });
+  }
+
   // Métodos para configurações do usuário
   Future<void> saveUserSettings(String userId, UserSettings settings) async {
     if (!_isValidUserId(userId)) {
