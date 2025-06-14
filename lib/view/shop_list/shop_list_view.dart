@@ -187,9 +187,7 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
                             child: CheckboxListTile(
                               value: item.isChecked,
                               onChanged: (value) {
-                                shoppingListController.toggleItemStatus(
-                                  item.id,
-                                );
+                                shoppingListController.toggleItem(item.id);
                               },
                               title: Text(
                                 item.name,
@@ -440,7 +438,8 @@ class _AddItemDialogState extends State<_AddItemDialog> {
                 ShoppingItem(
                   id: const Uuid().v4(),
                   name: _nameController.text,
-                  quantity: _quantityController.text,
+                  quantity: double.tryParse(_quantityController.text) ?? 1.0,
+                  unit: 'un', // Unidade padrão
                   category: _selectedCategory,
                   isChecked: false,
                   notes: _notesController.text,

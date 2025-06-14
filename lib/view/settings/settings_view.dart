@@ -121,7 +121,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
 
     // Atualizar as configurações
-    userSettingsController.updateAllSettings(updatedSettings);
+    userSettingsController.updateSettings(updatedSettings);
 
     // Mostrar mensagem de sucesso
     ScaffoldMessenger.of(context).showSnackBar(

@@ -1,7 +1,8 @@
 class ShoppingItem {
   final String id;
   final String name;
-  final String quantity;
+  final double quantity;
+  final String unit;
   final String category;
   final bool isChecked;
   final String notes;
@@ -10,6 +11,7 @@ class ShoppingItem {
     required this.id,
     required this.name,
     required this.quantity,
+    required this.unit,
     required this.category,
     this.isChecked = false,
     this.notes = '',
@@ -21,6 +23,7 @@ class ShoppingItem {
       'id': id,
       'name': name,
       'quantity': quantity,
+      'unit': unit,
       'category': category,
       'isChecked': isChecked,
       'notes': notes,
@@ -32,7 +35,8 @@ class ShoppingItem {
     return ShoppingItem(
       id: map['id'],
       name: map['name'],
-      quantity: map['quantity'],
+      quantity: (map['quantity'] as num).toDouble(),
+      unit: map['unit'],
       category: map['category'],
       isChecked: map['isChecked'] ?? false,
       notes: map['notes'] ?? '',
@@ -43,7 +47,8 @@ class ShoppingItem {
   ShoppingItem copyWith({
     String? id,
     String? name,
-    String? quantity,
+    double? quantity,
+    String? unit,
     String? category,
     bool? isChecked,
     String? notes,
@@ -52,6 +57,7 @@ class ShoppingItem {
       id: id ?? this.id,
       name: name ?? this.name,
       quantity: quantity ?? this.quantity,
+      unit: unit ?? this.unit,
       category: category ?? this.category,
       isChecked: isChecked ?? this.isChecked,
       notes: notes ?? this.notes,

@@ -1,18 +1,38 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:pdm_fatec_1/model/user_settings_model.dart';
+import 'package:pdm_fatec_1/services/firestore_service.dart';
 import 'package:pdm_fatec_1/services/storage_service.dart';
 
 class UserSettingsController with ChangeNotifier {
   static const String _storageKey = 'user_settings';
 
   final StorageService _storageService;
+  final FirestoreService _firestoreService;
   UserSettings _settings = UserSettings.defaultSettings();
+  String? _userId;
+  StreamSubscription? _settingsSubscription;
 
-  UserSettingsController(this._storageService) {
+  UserSettingsController(this._storageService, this._firestoreService) {
     _loadSettings();
   }
 
+  @override
+  void dispose() {
+    _settingsSubscription?.cancel();
+    super.dispose();
+  }
+
   UserSettings get settings => _settings;
+
+  void setUserId(String? userId) {
+    if (_userId != userId) {
+      _userId = userId;
+      _settingsSubscription?.cancel();
+      _loadSettings();
+    }
+  }
 
   // Obter o nome do usuário
   String get userName => _settings.name;
@@ -30,7 +50,18 @@ class UserSettingsController with ChangeNotifier {
 
   // Carregar configurações do armazenamento
   Future<void> _loadSettings() async {
-    if (_storageService.hasKey(_storageKey)) {
+    if (_userId != null) {
+      // Carregar do Firestore e escutar mudanças
+      _settingsSubscription = _firestoreService
+          .getUserSettingsStream(_userId!)
+          .listen((settings) {
+            if (settings != null) {
+              _settings = settings;
+              notifyListeners();
+            }
+          });
+    } else if (_storageService.hasKey(_storageKey)) {
+      // Carregar do armazenamento local
       final settingsData = _storageService.getData(_storageKey);
       if (settingsData != null) {
         _settings = UserSettings.fromMap(settingsData);
@@ -39,93 +70,124 @@ class UserSettingsController with ChangeNotifier {
     }
   }
 
-  // Atualizar o nome do usuário
+  // Atualizar configurações
+  Future<void> updateSettings(UserSettings newSettings) async {
+    _settings = newSettings;
+    if (_userId != null) {
+      await _firestoreService.saveUserSettings(_userId!, newSettings);
+    } else {
+      await _saveSettings();
+    }
+    notifyListeners();
+  }
+
+  // Atualizar nome
   Future<void> updateName(String name) async {
     _settings = _settings.copyWith(name: name);
-    await _saveSettings();
+    if (_userId != null) {
+      await _firestoreService.saveUserSettings(_userId!, _settings);
+    } else {
+      await _saveSettings();
+    }
     notifyListeners();
   }
 
-  // Atualizar o email
+  // Atualizar email
   Future<void> updateEmail(String email) async {
     _settings = _settings.copyWith(email: email);
-    await _saveSettings();
+    if (_userId != null) {
+      await _firestoreService.saveUserSettings(_userId!, _settings);
+    } else {
+      await _saveSettings();
+    }
     notifyListeners();
   }
 
-  // Atualizar a altura
+  // Atualizar altura
   Future<void> updateHeight(int height) async {
     _settings = _settings.copyWith(height: height);
-    await _saveSettings();
+    if (_userId != null) {
+      await _firestoreService.saveUserSettings(_userId!, _settings);
+    } else {
+      await _saveSettings();
+    }
     notifyListeners();
   }
 
-  // Atualizar o peso
+  // Atualizar peso
   Future<void> updateWeight(int weight) async {
     _settings = _settings.copyWith(weight: weight);
-    await _saveSettings();
+    if (_userId != null) {
+      await _firestoreService.saveUserSettings(_userId!, _settings);
+    } else {
+      await _saveSettings();
+    }
     notifyListeners();
   }
 
-  // Atualizar uma preferência alimentar
-  Future<void> updateDietaryPreference(String preference, bool value) async {
-    final updatedPreferences = Map<String, bool>.from(
-      _settings.dietaryPreferences,
-    );
-    updatedPreferences[preference] = value;
-
-    _settings = _settings.copyWith(dietaryPreferences: updatedPreferences);
-    await _saveSettings();
+  // Atualizar preferências alimentares
+  Future<void> updateDietaryPreferences(Map<String, bool> preferences) async {
+    _settings = _settings.copyWith(dietaryPreferences: preferences);
+    if (_userId != null) {
+      await _firestoreService.saveUserSettings(_userId!, _settings);
+    } else {
+      await _saveSettings();
+    }
     notifyListeners();
   }
 
-  // Atualizar todas as metas nutricionais
-  Future<void> updateNutritionalGoals({
-    required int calories,
-    required int protein,
-    required int carbs,
-    required int fat,
+  // Atualizar metas de nutrientes
+  Future<void> updateNutritionGoals({
+    int? caloriesGoal,
+    int? proteinGoal,
+    int? carbsGoal,
+    int? fatGoal,
   }) async {
     _settings = _settings.copyWith(
-      caloriesGoal: calories,
-      proteinGoal: protein,
-      carbsGoal: carbs,
-      fatGoal: fat,
+      caloriesGoal: caloriesGoal,
+      proteinGoal: proteinGoal,
+      carbsGoal: carbsGoal,
+      fatGoal: fatGoal,
     );
-    await _saveSettings();
+    if (_userId != null) {
+      await _firestoreService.saveUserSettings(_userId!, _settings);
+    } else {
+      await _saveSettings();
+    }
     notifyListeners();
   }
 
-  // Atualizar as configurações de notificação
+  // Atualizar configurações de notificação
   Future<void> updateNotificationSettings({
-    required bool mealReminders,
-    required bool shoppingList,
-    required bool weeklyReport,
+    bool? notifyMealReminders,
+    bool? notifyShoppingList,
+    bool? notifyWeeklyReport,
   }) async {
     _settings = _settings.copyWith(
-      notifyMealReminders: mealReminders,
-      notifyShoppingList: shoppingList,
-      notifyWeeklyReport: weeklyReport,
+      notifyMealReminders: notifyMealReminders,
+      notifyShoppingList: notifyShoppingList,
+      notifyWeeklyReport: notifyWeeklyReport,
     );
-    await _saveSettings();
+    if (_userId != null) {
+      await _firestoreService.saveUserSettings(_userId!, _settings);
+    } else {
+      await _saveSettings();
+    }
     notifyListeners();
   }
 
-  // Atualizar o tema do aplicativo
+  // Atualizar tema
   Future<void> updateTheme(String theme) async {
     _settings = _settings.copyWith(theme: theme);
-    await _saveSettings();
+    if (_userId != null) {
+      await _firestoreService.saveUserSettings(_userId!, _settings);
+    } else {
+      await _saveSettings();
+    }
     notifyListeners();
   }
 
-  // Atualizar todas as configurações do usuário
-  Future<void> updateAllSettings(UserSettings settings) async {
-    _settings = settings;
-    await _saveSettings();
-    notifyListeners();
-  }
-
-  // Salvar configurações no armazenamento
+  // Salvar configurações no armazenamento local
   Future<void> _saveSettings() async {
     await _storageService.saveData(_storageKey, _settings.toMap());
   }
@@ -133,7 +195,11 @@ class UserSettingsController with ChangeNotifier {
   // Redefinir configurações para os valores padrão
   Future<void> resetToDefaults() async {
     _settings = UserSettings.defaultSettings();
-    await _saveSettings();
+    if (_userId != null) {
+      await _firestoreService.saveUserSettings(_userId!, _settings);
+    } else {
+      await _saveSettings();
+    }
     notifyListeners();
   }
 }
