@@ -1,0 +1,48 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Função auxiliar para verificar se o usuário está autenticado
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    // Função auxiliar para verificar se o usuário está acessando seus próprios dados
+    function isOwner(userId) {
+      return request.auth.uid == userId;
+    }
+
+    // Regras para a coleção de usuários
+    match /users/{userId} {
+      allow read, write: if isAuthenticated() && isOwner(userId);
+    }
+
+    // Regras para a coleção de configurações
+    match /settings/{userId} {
+      allow read, write: if isAuthenticated() && isOwner(userId);
+    }
+
+    // Regras para a coleção de refeições
+    match /meals/{userId} {
+      allow read, write: if isAuthenticated() && isOwner(userId);
+      
+      match /user_meals/{mealId} {
+        allow read, write: if isAuthenticated() && isOwner(userId);
+      }
+    }
+
+    // Regras para a coleção de lista de compras
+    match /shopping_list/{userId} {
+      allow read, write: if isAuthenticated() && isOwner(userId);
+      
+      match /items/{itemId} {
+        allow read, write: if isAuthenticated() && isOwner(userId);
+      }
+    }
+
+    // Regra padrão - negar acesso a todas as outras coleções
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+} 

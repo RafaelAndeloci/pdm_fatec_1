@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:pdm_fatec_1/model/meal_model.dart';
+import 'package:pdm_fatec_1/services/firestore_service.dart';
 import 'package:pdm_fatec_1/services/storage_service.dart';
 import 'package:uuid/uuid.dart';
 
@@ -7,13 +8,20 @@ class MealController with ChangeNotifier {
   static const String _storageKey = 'meals';
 
   final StorageService _storageService;
+  final FirestoreService _firestoreService;
   List<Meal> _meals = [];
+  String? _userId;
 
-  MealController(this._storageService) {
+  MealController(this._storageService, this._firestoreService) {
     _loadMeals();
   }
 
   List<Meal> get meals => _meals;
+
+  void setUserId(String? userId) {
+    _userId = userId;
+    _loadMeals();
+  }
 
   // Obter refeições para um dia específico
   List<Meal> getMealsForDay(DateTime date) {
@@ -55,7 +63,14 @@ class MealController with ChangeNotifier {
 
   // Carregar refeições do armazenamento
   Future<void> _loadMeals() async {
-    if (_storageService.hasKey(_storageKey)) {
+    if (_userId != null) {
+      // Carregar do Firestore
+      _firestoreService.getUserMeals(_userId!).listen((meals) {
+        _meals = meals;
+        notifyListeners();
+      });
+    } else if (_storageService.hasKey(_storageKey)) {
+      // Carregar do armazenamento local
       final mealsData = _storageService.getList(_storageKey);
       if (mealsData != null) {
         _meals = mealsData.map((data) => Meal.fromMap(data)).toList();
@@ -67,58 +82,108 @@ class MealController with ChangeNotifier {
     }
   }
 
-  // Adicionar dados de exemplo
-  Future<void> _addSampleData() async {
-    final now = DateTime.now();
+  // Adicionar uma nova refeição
+  Future<void> addMeal(Meal meal) async {
+    if (_userId != null) {
+      await _firestoreService.addMeal(_userId!, meal);
+    } else {
+      _meals.add(meal);
+      await _saveMeals();
+      notifyListeners();
+    }
+  }
 
+  // Atualizar uma refeição existente
+  Future<void> updateMeal(Meal updatedMeal) async {
+    if (_userId != null) {
+      await _firestoreService.updateMeal(_userId!, updatedMeal);
+    } else {
+      final index = _meals.indexWhere((meal) => meal.id == updatedMeal.id);
+      if (index != -1) {
+        _meals[index] = updatedMeal;
+        await _saveMeals();
+        notifyListeners();
+      }
+    }
+  }
+
+  // Excluir uma refeição
+  Future<void> deleteMeal(String id) async {
+    if (_userId != null) {
+      await _firestoreService.deleteMeal(_userId!, id);
+    } else {
+      _meals.removeWhere((meal) => meal.id == id);
+      await _saveMeals();
+      notifyListeners();
+    }
+  }
+
+  // Avaliar uma refeição
+  Future<void> rateMeal(String id, int rating) async {
+    final index = _meals.indexWhere((meal) => meal.id == id);
+    if (index != -1) {
+      final updatedMeal = _meals[index].copyWith(rating: rating);
+      if (_userId != null) {
+        await _firestoreService.updateMeal(_userId!, updatedMeal);
+      } else {
+        _meals[index] = updatedMeal;
+        await _saveMeals();
+        notifyListeners();
+      }
+    }
+  }
+
+  // Salvar refeições no armazenamento
+  Future<void> _saveMeals() async {
+    final List<Map<String, dynamic>> mealsData =
+        _meals.map((meal) => meal.toMap()).toList();
+    await _storageService.saveList(_storageKey, mealsData);
+  }
+
+  // Adicionar dados de exemplo
+  void _addSampleData() {
+    final now = DateTime.now();
     _meals = [
       Meal(
         id: const Uuid().v4(),
         date: now,
         name: 'Café da Manhã',
-        description: 'Aveia com frutas e mel',
-        calories: 320,
-        protein: 12,
-        carbs: 45,
-        fat: 8,
+        description: 'Ovos mexidos com pão integral',
+        calories: 350,
+        protein: 20,
+        carbs: 30,
+        fat: 15,
         rating: 4,
         difficulty: 'Fácil',
-        prepTime: 10,
-        ingredients: ['Aveia', 'Banana', 'Mel', 'Canela'],
-        instructions: 'Misture todos os ingredientes e sirva.',
-        time: '07:00',
+        prepTime: 15,
+        ingredients: ['Ovos', 'Pão integral', 'Manteiga', 'Sal', 'Pimenta'],
+        instructions:
+            'Mexa os ovos e tempere com sal e pimenta. Frite na manteiga.',
+        time: '08:00',
       ),
       Meal(
         id: const Uuid().v4(),
         date: now,
         name: 'Almoço',
-        description: 'Salada com frango grelhado',
-        calories: 480,
+        description: 'Frango grelhado com arroz e salada',
+        calories: 550,
         protein: 35,
-        carbs: 25,
-        fat: 15,
+        carbs: 45,
+        fat: 20,
         rating: 5,
         difficulty: 'Médio',
         prepTime: 30,
-        ingredients: ['Peito de frango', 'Alface', 'Tomate', 'Azeite', 'Sal'],
-        instructions: 'Grelhe o frango e misture com os vegetais.',
-        time: '12:00',
-      ),
-      Meal(
-        id: const Uuid().v4(),
-        date: now,
-        name: 'Lanche',
-        description: 'Iogurte com granola',
-        calories: 180,
-        protein: 8,
-        carbs: 20,
-        fat: 5,
-        rating: 5,
-        difficulty: 'Fácil',
-        prepTime: 3,
-        ingredients: ['Iogurte natural', 'Granola', 'Frutas vermelhas'],
-        instructions: 'Misture todos os ingredientes e sirva.',
-        time: '16:00',
+        ingredients: [
+          'Peito de frango',
+          'Arroz',
+          'Alface',
+          'Tomate',
+          'Cenoura',
+          'Azeite',
+          'Sal',
+        ],
+        instructions: 'Grelhe o frango e prepare o arroz. Monte a salada.',
+        time: '12:30',
       ),
       Meal(
         id: const Uuid().v4(),
@@ -145,48 +210,6 @@ class MealController with ChangeNotifier {
       ),
     ];
 
-    await _saveMeals();
-  }
-
-  // Adicionar uma nova refeição
-  Future<void> addMeal(Meal meal) async {
-    _meals.add(meal);
-    await _saveMeals();
-    notifyListeners();
-  }
-
-  // Atualizar uma refeição existente
-  Future<void> updateMeal(Meal updatedMeal) async {
-    final index = _meals.indexWhere((meal) => meal.id == updatedMeal.id);
-    if (index != -1) {
-      _meals[index] = updatedMeal;
-      await _saveMeals();
-      notifyListeners();
-    }
-  }
-
-  // Excluir uma refeição
-  Future<void> deleteMeal(String id) async {
-    _meals.removeWhere((meal) => meal.id == id);
-    await _saveMeals();
-    notifyListeners();
-  }
-
-  // Avaliar uma refeição
-  Future<void> rateMeal(String id, int rating) async {
-    final index = _meals.indexWhere((meal) => meal.id == id);
-    if (index != -1) {
-      final updatedMeal = _meals[index].copyWith(rating: rating);
-      _meals[index] = updatedMeal;
-      await _saveMeals();
-      notifyListeners();
-    }
-  }
-
-  // Salvar refeições no armazenamento
-  Future<void> _saveMeals() async {
-    final List<Map<String, dynamic>> mealsData =
-        _meals.map((meal) => meal.toMap()).toList();
-    await _storageService.saveList(_storageKey, mealsData);
+    _saveMeals();
   }
 }

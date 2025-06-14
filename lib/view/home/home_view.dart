@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:pdm_fatec_1/controller/auth/auth_controller.dart';
 import 'package:pdm_fatec_1/view/about/about_view.dart';
 import 'package:pdm_fatec_1/view/dashboard/dashboard_view.dart';
 import 'package:pdm_fatec_1/view/forgot-password/forgot-password_view.dart';
 import 'package:pdm_fatec_1/view/register/register_view.dart';
+import 'package:provider/provider.dart';
 // Importe a tela de dashboard
 
 class HomePage extends StatefulWidget {
@@ -53,22 +55,25 @@ class _HomePageState extends State<HomePage> {
     });
 
     try {
-      // Simular uma chamada de API para login
-      await Future.delayed(const Duration(seconds: 2));
+      final success = await context.read<AuthController>().login(
+        _emailController.text,
+        _passwordController.text,
+      );
 
-      // Em um app real, você faria a validação real do login aqui
-      // Por enquanto, vamos apenas permitir o login para qualquer e-mail/senha válidos
-
-      if (mounted) {
+      if (success && mounted) {
         setState(() {
           _isLoading = false;
         });
 
-        // Redirecionar para o dashboard após login bem-sucedido
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(builder: (context) => const DashboardScreen()),
         );
+      } else if (mounted) {
+        setState(() {
+          _isLoading = false;
+          _errorMessage = "Falha no login. Verifique suas credenciais.";
+        });
       }
     } catch (e) {
       if (mounted) {

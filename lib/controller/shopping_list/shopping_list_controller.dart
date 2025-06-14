@@ -1,19 +1,47 @@
 import 'package:flutter/material.dart';
 import 'package:pdm_fatec_1/model/shopping_item_model.dart';
+import 'package:pdm_fatec_1/services/firestore_service.dart';
 import 'package:pdm_fatec_1/services/storage_service.dart';
-import 'package:uuid/uuid.dart';
 
 class ShoppingListController with ChangeNotifier {
   static const String _storageKey = 'shopping_items';
 
   final StorageService _storageService;
+  final FirestoreService _firestoreService;
   List<ShoppingItem> _items = [];
+  String? _userId;
+  String _searchQuery = '';
+  String _selectedCategory = 'Todos';
+  bool _showOnlyPending = true;
 
-  ShoppingListController(this._storageService) {
+  ShoppingListController(this._storageService, this._firestoreService) {
     _loadItems();
   }
 
   List<ShoppingItem> get items => _items;
+  String get searchQuery => _searchQuery;
+  String get selectedCategory => _selectedCategory;
+  bool get showOnlyPending => _showOnlyPending;
+
+  void setUserId(String? userId) {
+    _userId = userId;
+    _loadItems();
+  }
+
+  void setSearchQuery(String query) {
+    _searchQuery = query;
+    _loadItems();
+  }
+
+  void setSelectedCategory(String category) {
+    _selectedCategory = category;
+    _loadItems();
+  }
+
+  void setShowOnlyPending(bool showOnlyPending) {
+    _showOnlyPending = showOnlyPending;
+    _loadItems();
+  }
 
   // Obter itens filtrados por categoria
   List<ShoppingItem> getItemsByCategory(String category) {
@@ -35,99 +63,114 @@ class ShoppingListController with ChangeNotifier {
 
   // Carregar itens do armazenamento
   Future<void> _loadItems() async {
-    if (_storageService.hasKey(_storageKey)) {
+    if (_userId != null) {
+      // Carregar do Firestore com filtros
+      _firestoreService
+          .searchShoppingItems(
+            _userId!,
+            searchQuery: _searchQuery,
+            category: _selectedCategory,
+            showOnlyPending: _showOnlyPending,
+          )
+          .listen((items) {
+            _items = items;
+            notifyListeners();
+          });
+    } else if (_storageService.hasKey(_storageKey)) {
+      // Carregar do armazenamento local
       final itemsData = _storageService.getList(_storageKey);
       if (itemsData != null) {
         _items = itemsData.map((data) => ShoppingItem.fromMap(data)).toList();
+        // Aplicar filtros localmente
+        _applyFilters();
         notifyListeners();
       }
     } else {
-      // Adicionar dados de exemplo
-      _addSampleData();
+      _items = [];
+      notifyListeners();
     }
   }
 
-  // Adicionar dados de exemplo
-  Future<void> _addSampleData() async {
-    _items = [
-      ShoppingItem(
-        id: const Uuid().v4(),
-        name: 'Maçãs',
-        quantity: '1kg',
-        category: 'Frutas',
-        isChecked: false,
-        notes: 'Preferir maçãs gala',
-      ),
-      ShoppingItem(
-        id: const Uuid().v4(),
-        name: 'Frango',
-        quantity: '500g',
-        category: 'Carnes',
-        isChecked: false,
-        notes: 'Peito de frango sem pele',
-      ),
-      ShoppingItem(
-        id: const Uuid().v4(),
-        name: 'Queijo',
-        quantity: '200g',
-        category: 'Laticínios',
-        isChecked: true,
-        notes: 'Queijo minas',
-      ),
-      ShoppingItem(
-        id: const Uuid().v4(),
-        name: 'Tomates',
-        quantity: '5 unidades',
-        category: 'Verduras',
-        isChecked: false,
-      ),
-      ShoppingItem(
-        id: const Uuid().v4(),
-        name: 'Leite',
-        quantity: '1L',
-        category: 'Laticínios',
-        isChecked: false,
-        notes: 'Leite semidesnatado',
-      ),
-    ];
+  // Aplicar filtros localmente (para armazenamento local)
+  void _applyFilters() {
+    var filteredItems = _items;
 
-    await _saveItems();
+    // Filtrar por categoria
+    if (_selectedCategory != 'Todos') {
+      filteredItems =
+          filteredItems
+              .where((item) => item.category == _selectedCategory)
+              .toList();
+    }
+
+    // Filtrar por status
+    if (_showOnlyPending) {
+      filteredItems = filteredItems.where((item) => !item.isChecked).toList();
+    }
+
+    // Filtrar por texto de busca
+    if (_searchQuery.isNotEmpty) {
+      final query = _searchQuery.toLowerCase();
+      filteredItems =
+          filteredItems.where((item) {
+            return item.name.toLowerCase().contains(query) ||
+                item.notes.toLowerCase().contains(query);
+          }).toList();
+    }
+
+    _items = filteredItems;
   }
 
   // Adicionar um novo item
   Future<void> addItem(ShoppingItem item) async {
-    _items.add(item);
-    await _saveItems();
-    notifyListeners();
+    if (_userId != null) {
+      await _firestoreService.addShoppingItem(_userId!, item);
+    } else {
+      _items.add(item);
+      await _saveItems();
+      notifyListeners();
+    }
   }
 
   // Atualizar um item existente
   Future<void> updateItem(ShoppingItem updatedItem) async {
-    final index = _items.indexWhere((item) => item.id == updatedItem.id);
-    if (index != -1) {
-      _items[index] = updatedItem;
-      await _saveItems();
-      notifyListeners();
+    if (_userId != null) {
+      await _firestoreService.updateShoppingItem(_userId!, updatedItem);
+    } else {
+      final index = _items.indexWhere((item) => item.id == updatedItem.id);
+      if (index != -1) {
+        _items[index] = updatedItem;
+        await _saveItems();
+        notifyListeners();
+      }
     }
   }
 
   // Excluir um item
   Future<void> deleteItem(String id) async {
-    _items.removeWhere((item) => item.id == id);
-    await _saveItems();
-    notifyListeners();
+    if (_userId != null) {
+      await _firestoreService.deleteShoppingItem(_userId!, id);
+    } else {
+      _items.removeWhere((item) => item.id == id);
+      await _saveItems();
+      notifyListeners();
+    }
   }
 
-  // Alternar o status de um item (marcado/desmarcado)
-  Future<void> toggleItemStatus(String id) async {
+  // Marcar/desmarcar item
+  Future<void> toggleItem(String id) async {
     final index = _items.indexWhere((item) => item.id == id);
     if (index != -1) {
       final updatedItem = _items[index].copyWith(
         isChecked: !_items[index].isChecked,
       );
-      _items[index] = updatedItem;
-      await _saveItems();
-      notifyListeners();
+      if (_userId != null) {
+        await _firestoreService.updateShoppingItem(_userId!, updatedItem);
+      } else {
+        _items[index] = updatedItem;
+        await _saveItems();
+        notifyListeners();
+      }
     }
   }
 

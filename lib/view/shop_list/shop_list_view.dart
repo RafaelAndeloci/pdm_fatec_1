@@ -23,23 +23,10 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
     'Outros',
   ];
 
-  String _selectedCategory = 'Todos';
-  bool _showOnlyPending = true;
-
   @override
   Widget build(BuildContext context) {
     final shoppingListController = Provider.of<ShoppingListController>(context);
-    final allItems =
-        _showOnlyPending
-            ? shoppingListController.getPendingItems()
-            : shoppingListController.items;
-
-    final filteredItems =
-        _selectedCategory == 'Todos'
-            ? allItems
-            : allItems
-                .where((item) => item.category == _selectedCategory)
-                .toList();
+    final filteredItems = shoppingListController.items;
 
     return Scaffold(
       appBar: AppBar(
@@ -51,23 +38,43 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
         actions: [
           IconButton(
             icon: Icon(
-              _showOnlyPending
+              shoppingListController.showOnlyPending
                   ? Icons.check_box_outline_blank
                   : Icons.check_box,
               color: Colors.white,
             ),
             onPressed: () {
-              setState(() {
-                _showOnlyPending = !_showOnlyPending;
-              });
+              shoppingListController.setShowOnlyPending(
+                !shoppingListController.showOnlyPending,
+              );
             },
             tooltip:
-                _showOnlyPending ? 'Mostrar Todos' : 'Mostrar Apenas Pendentes',
+                shoppingListController.showOnlyPending
+                    ? 'Mostrar Todos'
+                    : 'Mostrar Apenas Pendentes',
           ),
         ],
       ),
       body: Column(
         children: [
+          // Campo de pesquisa
+          Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: TextField(
+              decoration: InputDecoration(
+                hintText: 'Pesquisar itens...',
+                prefixIcon: const Icon(Icons.search),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                filled: true,
+                fillColor: Colors.grey[100],
+              ),
+              onChanged: (value) {
+                shoppingListController.setSearchQuery(value);
+              },
+            ),
+          ),
           // Filtro de categorias
           Container(
             height: 60,
@@ -77,26 +84,23 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
               itemCount: _categories.length,
               itemBuilder: (context, index) {
                 final category = _categories[index];
-                final isSelected = category == _selectedCategory;
-
+                final isSelected =
+                    category == shoppingListController.selectedCategory;
                 return Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 4),
                   child: ChoiceChip(
                     label: Text(category),
                     selected: isSelected,
+                    onSelected: (selected) {
+                      if (selected) {
+                        shoppingListController.setSelectedCategory(category);
+                      }
+                    },
+                    backgroundColor: Colors.grey[200],
                     selectedColor: Colors.orange,
                     labelStyle: TextStyle(
                       color: isSelected ? Colors.white : Colors.black,
-                      fontWeight:
-                          isSelected ? FontWeight.bold : FontWeight.normal,
                     ),
-                    onSelected: (selected) {
-                      if (selected) {
-                        setState(() {
-                          _selectedCategory = category;
-                        });
-                      }
-                    },
                   ),
                 );
               },
@@ -187,9 +191,7 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
                             child: CheckboxListTile(
                               value: item.isChecked,
                               onChanged: (value) {
-                                shoppingListController.toggleItemStatus(
-                                  item.id,
-                                );
+                                shoppingListController.toggleItem(item.id);
                               },
                               title: Text(
                                 item.name,
@@ -261,14 +263,23 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
 
   // Widget para mostrar estado vazio
   Widget _buildEmptyState() {
+    final shoppingListController = Provider.of<ShoppingListController>(context);
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.shopping_cart, size: 80, color: Colors.grey[400]),
+          Icon(
+            shoppingListController.searchQuery.isNotEmpty
+                ? Icons.search_off
+                : Icons.shopping_cart,
+            size: 80,
+            color: Colors.grey[400],
+          ),
           const SizedBox(height: 16),
           Text(
-            'Sua lista de compras está vazia',
+            shoppingListController.searchQuery.isNotEmpty
+                ? 'Nenhum item encontrado para "${shoppingListController.searchQuery}"'
+                : 'Sua lista de compras está vazia',
             style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,
@@ -277,7 +288,9 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
           ),
           const SizedBox(height: 8),
           Text(
-            'Adicione itens usando o botão abaixo',
+            shoppingListController.searchQuery.isNotEmpty
+                ? 'Tente uma busca diferente'
+                : 'Adicione itens usando o botão abaixo',
             style: TextStyle(color: Colors.grey[600]),
           ),
         ],
@@ -440,7 +453,8 @@ class _AddItemDialogState extends State<_AddItemDialog> {
                 ShoppingItem(
                   id: const Uuid().v4(),
                   name: _nameController.text,
-                  quantity: _quantityController.text,
+                  quantity: double.tryParse(_quantityController.text) ?? 1.0,
+                  unit: 'un', // Unidade padrão
                   category: _selectedCategory,
                   isChecked: false,
                   notes: _notesController.text,
